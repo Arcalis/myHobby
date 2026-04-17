@@ -1,13 +1,18 @@
 import { Link } from 'react-router-dom'
-
+import logo from '/src/assets/logo.png'
 function Navbar() {
-  return (
-    <nav>
-      <Link to="/">Список мероприятий</Link>
-      <Link to="/map">Карта</Link>
-      <Link to="/profile">Личный кабинет</Link>
-    </nav>
-  )
+    return (
+        <>
+            <img src={logo} alt="Логотип" />
+            <h1>ОБРАЗОВАТЕЛЬНЫЕ ПЛАТФОРМЫ</h1>
+
+            <Link to=".src/App.jsx">Главная</Link>
+            <Link to=".src/pages/Events">Мероприятия</Link>
+            <Link to=".src/pages/aboutUs">О нас</Link>
+
+            <button name="SignIn" value="signIn">Войти</button>
+        </>
+    )
 }
 
 export default Navbar
