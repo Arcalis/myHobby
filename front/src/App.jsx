@@ -5,8 +5,13 @@ function App() {
 
   return (
     <>
-      <section id="upperLine">
+      <section id="NavMenu">
         <Navbar />
+      </section>
+      <hr/>
+
+      <section id="Welcome">
+
       </section>
     </>
   )
