@@ -6,8 +6,6 @@ import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <BrowserRouter>          {/* ← обёртка */}
-      <App />
-    </BrowserRouter>
+    <App />
   </React.StrictMode>,
 )
