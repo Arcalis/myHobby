@@ -1,7 +1,7 @@
 import { createBrowserRouter } from "react-router";
 import { Root } from "./components/Root";
 import { HomePage } from "./components/pages/HomePage";
-import { EventsPage } from "./components/pages/EventsPage";
+import EventsPage from "./components/pages/EventsPage";
 import { EventDetailPage } from "./components/pages/EventDetailPage";
 import { ProfilePage } from "./components/pages/ProfilePage";
 import { AdminPage } from "./components/pages/AdminPage";
