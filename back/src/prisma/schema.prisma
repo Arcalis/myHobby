@@ -19,8 +19,9 @@ model User {
   role         String    @default("user")
 
   organizer    Organizer? @relation(fields: [organizer_id], references: [id])
-  user_events  UserEvent[]
-  complaints   Complaint[]   // ← исправлено: убрано @relation("from_user")
+  user_event  UserEvent[]
+  complaint   Complaint[]  
+  @@map("users")
 }
 
 // Таблица 7: complaints
@@ -49,7 +50,7 @@ model Organizer {
 model Age {
   id           String   @id @default(uuid()) @map("id")
   age_category String   @map("age_category")
-  events       Event[]  // мероприятия этой возрастной категории
+  event       Event[]  // мероприятия этой возрастной категории
 
   @@map("ages")
 }
@@ -87,7 +88,7 @@ model Event {
   tag          Tag?        @relation(fields: [tag_id], references: [id])
   age          Age?        @relation(fields: [age_id], references: [id])
   organizer    Organizer?  @relation(fields: [organizer_id], references: [id])
-  user_events  UserEvent[]
+  user_event  UserEvent[]
 
   @@map("events")
 }
@@ -104,6 +105,6 @@ model UserEvent {
   event Event @relation(fields: [id_event], references: [id])
 
   @@unique([id_user, id_event])
-  @@map("user_event")
+  @@map("user_events")
 }
 

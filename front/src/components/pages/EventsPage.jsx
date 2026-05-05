@@ -1,23 +1,42 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { mockEvents } from '../../data/mockData';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { Search, Filter, Calendar, MapPin, Users, Clock } from 'lucide-react';
 import { Checkbox } from '../ui/checkbox';
 import { Label } from '../ui/label';
+import { apiRequest } from '../../api/client';
 
 export default function EventsPage() {
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFormats, setSelectedFormats] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [selectedAges, setSelectedAges] = useState([]);
 
-  const formats = ['online', 'offline', 'hybrid'];
-  const categories = [...new Set(mockEvents.map((event) => event.category))];
-  const ages = [...new Set(mockEvents.map((event) => event.ageCategory))];
+  useEffect(() => {
+    const loadEvents = async () => {
+      try {
+        const data = await apiRequest('/api/events');
+        const items = Array.isArray(data) ? data : data.events || [];
+        setEvents(items);
+      } catch (error) {
+        console.error(error);
+        setEvents([]);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const filteredEvents = mockEvents.filter((event) => {
+    loadEvents();
+  }, []);
+
+  const formats = ['online', 'offline', 'hybrid'];
+  const categories = [...new Set(events.map((event) => event.category))];
+  const ages = [...new Set(events.map((event) => event.ageCategory))];
+
+  const filteredEvents = events.filter((event) => {
     const q = searchQuery.toLowerCase();
 
     const matchesSearch =
@@ -77,10 +96,10 @@ export default function EventsPage() {
               selectedFormats.length > 0 ||
               selectedCategories.length > 0 ||
               selectedAges.length > 0) && (
-                <Button variant="outline" onClick={clearFilters} className="shrink-0">
-                  Сбросить фильтры
-                </Button>
-              )}
+              <Button variant="outline" onClick={clearFilters} className="shrink-0">
+                Сбросить фильтры
+              </Button>
+            )}
           </div>
         </div>
       </section>
@@ -187,7 +206,11 @@ export default function EventsPage() {
               </p>
             </div>
 
-            {filteredEvents.length === 0 ? (
+            {loading ? (
+              <div className="bg-card border border-border rounded-lg p-12 text-center">
+                <p className="text-muted-foreground">Загрузка мероприятий...</p>
+              </div>
+            ) : filteredEvents.length === 0 ? (
               <div className="bg-card border border-border rounded-lg p-12 text-center">
                 <p className="text-muted-foreground">Мероприятия не найдены</p>
               </div>
@@ -270,7 +293,7 @@ export default function EventsPage() {
                           <td className="px-4 py-4 align-top">
                             <div className="flex items-center gap-2 text-sm text-muted-foreground min-w-0">
                               <MapPin className="w-4 h-4 flex-shrink-0" />
-                              <span className="">{event.location}</span>
+                              <span>{event.location}</span>
                             </div>
                           </td>
 

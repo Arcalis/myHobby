@@ -17,17 +17,18 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(cors({
-  origin: true,
+  origin: 'http://localhost:5173',
   credentials: true,
 }));
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Роуты
 app.use('/api/auth', authRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api/users', userEventsRoutes);
+app.use('/api/', userEventsRoutes);
 app.use('/api', complaintsRoutes);
 
 // 404 для неизвестных маршрутов

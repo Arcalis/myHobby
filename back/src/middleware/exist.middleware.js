@@ -3,7 +3,7 @@ import prisma from '../prisma/client.js';
 export const eventExists = async (req, res, next) => {
   const { id } = req.params;
 
-  const event = await prisma.events.findUnique({
+  const event = await prisma.event.findUnique({
     where: { id },
   });
 

@@ -4,7 +4,7 @@ export const isEventOwner = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    const event = await prisma.events.findUnique({
+    const event = await prisma.event.findUnique({
       where: { id },
     });
 

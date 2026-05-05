@@ -3,7 +3,7 @@ import prisma from '../prisma/client.js';
 export const complaint = async (req, res) => {
   const { message } = req.body;
 
-  const data = await prisma.complaints.create({
+  const data = await prisma.complaint.create({
     data: {
       message,
       from_user: req.user.id,
@@ -14,14 +14,14 @@ export const complaint = async (req, res) => {
 };
 
 export const getComplaint = async (req, res) => {
-  const data = await prisma.complaints.findMany();
+  const data = await prisma.complaint.findMany();
   res.json(data);
 };
 
 export const editComplaint = async (req, res) => {
   const { id } = req.params;
 
-  const data = await prisma.complaints.update({
+  const data = await prisma.complaint.update({
     where: { id },
     data: req.body,
   });
@@ -32,7 +32,7 @@ export const editComplaint = async (req, res) => {
 export const deleteComplaint = async (req, res) => {
   const { id } = req.params;
 
-  await prisma.complaints.delete({
+  await prisma.complaint.delete({
     where: { id },
   });
 

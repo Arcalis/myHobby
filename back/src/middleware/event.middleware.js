@@ -1,7 +1,7 @@
 import prisma from '../prisma/client.js';
 
 export const events = async (req, res) => {
-  const events = await prisma.events.findMany({
+  const events = await prisma.event.findMany({
     where: { deleted: false, approved: true },
   });
 
@@ -11,7 +11,7 @@ export const events = async (req, res) => {
 export const currEvent = async (req, res) => {
   const { id } = req.params;
 
-  const event = await prisma.events.findUnique({
+  const event = await prisma.event.findUnique({
     where: { id },
   });
 
@@ -19,7 +19,7 @@ export const currEvent = async (req, res) => {
 };
 
 export const newEvent = async (req, res) => {
-  const event = await prisma.events.create({
+  const event = await prisma.event.create({
     data: {
       ...req.body,
       author: req.user.id,
@@ -33,7 +33,7 @@ export const newEvent = async (req, res) => {
 export const editEvent = async (req, res) => {
   const { id } = req.params;
 
-  const event = await prisma.events.update({
+  const event = await prisma.event.update({
     where: { id },
     data: req.body,
   });
@@ -44,7 +44,7 @@ export const editEvent = async (req, res) => {
 export const approveEvent = async (req, res) => {
   const { id } = req.params;
 
-  const event = await prisma.events.update({
+  const event = await prisma.event.update({
     where: { id },
     data: { approved: true },
   });
@@ -55,7 +55,7 @@ export const approveEvent = async (req, res) => {
 export const deleteEvent = async (req, res) => {
   const { id } = req.params;
 
-  await prisma.events.update({
+  await prisma.event.update({
     where: { id },
     data: { deleted: true },
   });
@@ -70,7 +70,7 @@ export const deleteEvent = async (req, res) => {
 export const join = async (req, res) => {
   const { id } = req.params;
 
-  const record = await prisma.user_event.create({
+  const record = await prisma.userEvent.create({
     data: {
       id_user: req.user.id,
       id_event: id,
@@ -84,7 +84,7 @@ export const join = async (req, res) => {
 export const deleteJoin = async (req, res) => {
   const { id } = req.params;
 
-  await prisma.user_event.deleteMany({
+  await prisma.userEvent.deleteMany({
     where: {
       id_user: req.user.id,
       id_event: id,
@@ -97,7 +97,7 @@ export const deleteJoin = async (req, res) => {
 export const favorite = async (req, res) => {
   const { id } = req.params;
 
-  const record = await prisma.user_event.create({
+  const record = await prisma.userEvent.create({
     data: {
       id_user: req.user.id,
       id_event: id,
@@ -111,7 +111,7 @@ export const favorite = async (req, res) => {
 export const deleteFavorite = async (req, res) => {
   const { id } = req.params;
 
-  await prisma.user_event.deleteMany({
+  await prisma.userEvent.deleteMany({
     where: {
       id_user: req.user.id,
       id_event: id,
@@ -122,7 +122,7 @@ export const deleteFavorite = async (req, res) => {
 };
 
 export const favorites = async (req, res) => {
-  const data = await prisma.user_event.findMany({
+  const data = await prisma.userEvent.findMany({
     where: {
       id_user: req.user.id,
       favorites: true,
@@ -134,7 +134,7 @@ export const favorites = async (req, res) => {
 };
 
 export const registrations = async (req, res) => {
-  const data = await prisma.user_event.findMany({
+  const data = await prisma.userEvent.findMany({
     where: {
       id_user: req.user.id,
       member: true,
