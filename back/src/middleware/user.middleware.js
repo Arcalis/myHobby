@@ -1,58 +1,33 @@
+import jwt from 'jsonwebtoken';
 import prisma from '../prisma/client.js';
 
-export const listUser = async (req, res) => {
-  const users = await prisma.users.findMany();
-  res.json(users);
-};
+export const authMiddleware = async (req, res, next) => {
+  try {
+    const header = req.headers.authorization;
 
-export const me = async (req, res) => {
-  const user = await prisma.users.findUnique({
-    where: { id: req.user.id },
-  });
+    if (!header || !header.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'No token provided' });
+    }
 
-  res.json(user);
-};
+    const token = header.split(' ')[1];
 
-export const editUser = async (req, res) => {
-  const { id } = req.params;
+    const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
 
-  const user = await prisma.users.update({
-    where: { id },
-    data: req.body,
-  });
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.id },
+    });
 
-  res.json(user);
-};
+    if (!user) {
+      return res.status(401).json({ message: 'User not found' });
+    }
 
-export const editRole = async (req, res) => {
-  const { id } = req.params;
-  const { role } = req.body;
+    if (user.blocked) {
+      return res.status(403).json({ message: 'User blocked' });
+    }
 
-  const user = await prisma.users.update({
-    where: { id },
-    data: { role },
-  });
-
-  res.json(user);
-};
-
-export const blockUser = async (req, res) => {
-  const { id } = req.params;
-
-  const user = await prisma.users.update({
-    where: { id },
-    data: { blocked: true },
-  });
-
-  res.json(user);
-};
-
-export const deleteUser = async (req, res) => {
-  const { id } = req.params;
-
-  await prisma.users.delete({
-    where: { id },
-  });
-
-  res.json({ message: 'Deleted' });
+    req.user = user;
+    next();
+  } catch (error) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
 };

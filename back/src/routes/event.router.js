@@ -1,5 +1,7 @@
 import express from 'express';
 import {
+  tags,
+  ages,
   events,
   currEvent,
   newEvent,
@@ -8,13 +10,16 @@ import {
   deleteEvent,
 } from '../controllers/event.controller.js';
 
-const eventRoute = express.Router();
+const eventRoutes = express.Router();
 
-eventRoute.get('/', events);
-eventRoute.get('/:id', currEvent);
-eventRoute.post('/', newEvent);
-eventRoute.patch('/:id/edit', editEvent);
-eventRoute.patch('/:id/approve', approveEvent);
-eventRoute.delete('/:id', deleteEvent);
+eventRoutes.get('/tags', tags);
+eventRoutes.get('/ages', ages);
+eventRoutes.get('/', events);
+eventRoutes.get('/:id', currEvent);
+eventRoutes.post('/', newEvent);
+eventRoutes.patch('/:id/edit', editEvent);
+eventRoutes.patch('/:id/approve', approveEvent);
+eventRoutes.delete('/:id', deleteEvent);
 
-export default eventRoute;
+
+export default eventRoutes;

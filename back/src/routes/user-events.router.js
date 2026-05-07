@@ -8,13 +8,14 @@ import {
   deleteFavorite,
 } from '../controllers/event.controller.js';
 
-const userEventsRoute = express.Router();
+const userEventsRoutes = express.Router();
 
-userEventsRoute.get('/users/me/favorites', favorites);
-userEventsRoute.get('/users/me/registrations', registrations);
-userEventsRoute.post('/events/:id/join', join);
-userEventsRoute.post('/events/:id/favorite', favorite);
-userEventsRoute.delete('/events/:id/join', deleteJoin);
-userEventsRoute.delete('/events/:id/favorite', deleteFavorite);
+userEventsRoutes.get('/users/me/favorites', favorites);
+userEventsRoutes.get('/users/me/registrations', registrations);
 
-export default userEventsRoute;
+userEventsRoutes.post('/events/:id/join', join);
+userEventsRoutes.post('/events/:id/favorite', favorite);
+userEventsRoutes.delete('/events/:id/join', deleteJoin);
+userEventsRoutes.delete('/events/:id/favorite', deleteFavorite);
+
+export default userEventsRoutes;

@@ -7,22 +7,38 @@ import { apiRequest } from '../../api/client';
 export function HomePage() {
   const [featuredEvents, setFeaturedEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [tagsMap, setTagsMap] = useState({}); 
+  const [agesMap, setAgesMap] = useState({}); 
+
 
   useEffect(() => {
-    const loadEvents = async () => {
+    const loadData = async () => {
       try {
-        const data = await apiRequest('/api/events');
-        const events = Array.isArray(data) ? data : data.events || [];
+        const [tagsData, agesData, eventsData] = await Promise.all([
+          apiRequest('/api/events/tags'),
+          apiRequest('/api/events/ages'),
+          apiRequest('/api/events'),
+        ]);
+
+        const tagsObj = Object.fromEntries(tagsData.map(t => [t.id, t.tag]));
+        const agesObj = Object.fromEntries(agesData.map(a => [a.id, a.age]));
+
+        setTagsMap(tagsObj);
+        setAgesMap(agesObj);
+
+        const events = Array.isArray(eventsData)
+          ? eventsData
+          : eventsData.events || [];
         setFeaturedEvents(events.slice(0, 3));
       } catch (error) {
-        console.error(error);
+        console.error('Ошибка загрузки данных:', error);
         setFeaturedEvents([]);
       } finally {
         setLoading(false);
       }
     };
 
-    loadEvents();
+    loadData();
   }, []);
 
   const scrollToEvents = () => {
@@ -142,10 +158,11 @@ export function HomePage() {
                   <div className="p-6 space-y-4">
                     <div className="flex items-start justify-between gap-4">
                       <h3 className="font-medium text-foreground leading-snug flex-1">
-                        {event.title}
+                        {event.name}
                       </h3>
+                      {/* Теперь выводим название тега вместо ID */}
                       <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded whitespace-nowrap">
-                        {event.category}
+                        {tagsMap[event.tag_id] || event.tag_id}
                       </span>
                     </div>
 
@@ -166,10 +183,18 @@ export function HomePage() {
                           {event.format}
                         </span>
                       </div>
+                      {/* Строка возраста */}
+                      <div className="flex items-center justify-between">
+                        <span>Возраст:</span>
+                        <span className="text-foreground font-medium">
+                          {agesMap[event.age_id] || event.age_id}
+                        </span>
+                      </div>
+                      {/* Исправленное отображение занятых/всего мест */}
                       <div className="flex items-center justify-between">
                         <span>Мест:</span>
                         <span className="text-foreground font-medium">
-                          {event.availableSeats} из {event.totalSeats}
+                          {event.count_members} из {event.max_members ?? '?'}
                         </span>
                       </div>
                     </div>

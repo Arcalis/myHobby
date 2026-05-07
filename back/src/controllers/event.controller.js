@@ -1,11 +1,22 @@
 import prisma from '../prisma/client.js';
 
 export const events = async (req, res) => {
-  const events = await prisma.event.findMany({
-    where: { deleted: false, approved: true },
-  });
+   const events = await prisma.event.findMany({
+      include: {
+        _count: {
+          select:{
+            user_event: { 
+            where: { member: true }, // подсчёт записей в UserEvent
+        }}},
+      },
+    });
 
-  res.json(events);
+    const result = events.map(event => ({
+      ...event,
+      count_members: event._count.registrations, // количество занятых мест
+    }));
+
+    res.json(result);
 };
 
 export const currEvent = async (req, res) => {
@@ -17,6 +28,16 @@ export const currEvent = async (req, res) => {
 
   res.json(event);
 };
+
+export const tags = async (req, res) => {
+  const tags = await prisma.tag.findMany({});
+  res.json(tags);
+}
+
+export const ages = async (req, res) => {
+  const ages = await prisma.age.findMany({});
+  res.json(ages);
+}
 
 export const newEvent = async (req, res) => {
   const event = await prisma.event.create({

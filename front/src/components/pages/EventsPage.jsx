@@ -267,10 +267,7 @@ export default function EventsPage() {
                               <Calendar className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                               <div className="min-w-0 leading-tight">
                                 <div className="font-medium whitespace-nowrap">
-                                  {new Date(event.date).toLocaleDateString('ru-RU', {
-                                    day: 'numeric',
-                                    month: 'long',
-                                  })}
+                                  {new Date(event.date).toLocaleDateString('ru-RU')}
                                 </div>
                                 <div className="text-xs text-muted-foreground flex items-center gap-1 whitespace-nowrap">
                                   <Clock className="w-3 h-3" />

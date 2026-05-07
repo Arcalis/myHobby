@@ -1,10 +1,36 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AuthContext } from './AuthContext';
 import { apiRequest } from '../api/client';
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // важно!
+  const [isAuth, setIsAuth] = useState(false);
+
+useEffect(() => {
+  const restoreSession = async () => {
+    try {
+      const storedToken = localStorage.getItem('accessToken');
+      if (!storedToken) {
+        setLoading(false);
+        return;
+      }
+      // Запрос данных текущего пользователя
+      const userData = await apiRequest('/api/users/me');
+      setUser(userData);
+      setIsAuth(true);
+    } catch (err) {
+
+      localStorage.removeItem('accessToken');
+      setUser(null);
+      setIsAuth(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  restoreSession();
+}, []);
 
   const token = localStorage.getItem('accessToken');
 
@@ -19,6 +45,7 @@ export function AuthProvider({ children }) {
 
       localStorage.setItem('accessToken', data.accessToken);
       setUser(data.user);
+      setIsAuth(true);
 
       return data.user;
     } finally {
@@ -27,12 +54,10 @@ export function AuthProvider({ children }) {
   };
 
   const register = async (email, password, first_name, second_name) => {
-    const data = await apiRequest('/api/auth/register', {
+    return await apiRequest('/api/auth/register', {
       method: 'POST',
       body: { email, password, first_name, second_name },
     });
-
-    return data;
   };
 
   const logout = async () => {
@@ -46,6 +71,7 @@ export function AuthProvider({ children }) {
 
     localStorage.removeItem('accessToken');
     setUser(null);
+    setIsAuth(false);
   };
 
   return (
@@ -54,7 +80,7 @@ export function AuthProvider({ children }) {
         user,
         loading,
         token,
-        isAuthenticated: !!user,
+        isAuthenticated: isAuth,
         login,
         register,
         logout,

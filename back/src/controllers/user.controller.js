@@ -1,13 +1,30 @@
 import prisma from '../prisma/client.js';
 
 export const listUser = async (req, res) => {
-  const users = await prisma.users.findMany();
+  const users = await prisma.user.findMany();
   res.json(users);
 };
 
 export const me = async (req, res) => {
-  const user = await prisma.users.findUnique({
+  const user = await prisma.user.findUnique({
     where: { id: req.user.id },
+  });
+
+  res.json(user);
+};
+
+export const profile = async (req, res) => {
+  const user = await prisma.user.findUnique({
+    where: { id: req.user.id },
+    select: {
+      id: true,
+      name: true,
+      first_name: true,
+      second_name: true,
+      email: true,
+      organizer_id: true,
+      role: true,
+    },
   });
 
   res.json(user);
@@ -16,7 +33,7 @@ export const me = async (req, res) => {
 export const editUser = async (req, res) => {
   const { id } = req.params;
 
-  const user = await prisma.users.update({
+  const user = await prisma.user.update({
     where: { id },
     data: req.body,
   });
@@ -28,7 +45,7 @@ export const editRole = async (req, res) => {
   const { id } = req.params;
   const { role } = req.body;
 
-  const user = await prisma.users.update({
+  const user = await prisma.user.update({
     where: { id },
     data: { role },
   });
@@ -39,7 +56,7 @@ export const editRole = async (req, res) => {
 export const blockUser = async (req, res) => {
   const { id } = req.params;
 
-  const user = await prisma.users.update({
+  const user = await prisma.user.update({
     where: { id },
     data: { blocked: true },
   });
@@ -50,7 +67,7 @@ export const blockUser = async (req, res) => {
 export const deleteUser = async (req, res) => {
   const { id } = req.params;
 
-  await prisma.users.delete({
+  await prisma.user.delete({
     where: { id },
   });
 

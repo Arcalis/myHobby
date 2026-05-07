@@ -17,7 +17,7 @@ export function ProfilePage() {
   useEffect(() => {
     const loadProfileData = async () => {
       try {
-        const data = await apiRequest('/api/profile');
+        const data = await apiRequest('/api/users/profile');
         setRegisteredEvents(data.registeredEvents || []);
         setFavoriteEvents(data.favoriteEvents || []);
         setMyEvents(data.myEvents || []);

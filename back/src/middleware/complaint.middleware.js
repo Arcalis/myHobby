@@ -1,40 +1,51 @@
 import prisma from '../prisma/client.js';
 
-export const complaint = async (req, res) => {
-  const { message } = req.body;
+export const complaintExists = async (req, res, next) => {
+  try {
+    const { id } = req.params;
 
-  const data = await prisma.complaint.create({
-    data: {
-      message,
-      from_user: req.user.id,
-    },
-  });
+    const complaint = await prisma.complaint.findUnique({
+      where: { id },
+    });
 
-  res.json(data);
+    if (!complaint) {
+      return res.status(404).json({ message: 'Complaint not found' });
+    }
+
+    req.complaint = complaint;
+    next();
+  } catch (error) {
+    return res.status(500).json({ message: 'Server error' });
+  }
 };
 
-export const getComplaint = async (req, res) => {
-  const data = await prisma.complaint.findMany();
-  res.json(data);
+export const complaintOwnerOrAdmin = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const complaint = await prisma.complaint.findUnique({
+      where: { id },
+    });
+
+    if (!complaint) {
+      return res.status(404).json({ message: 'Complaint not found' });
+    }
+
+    if (req.user.role !== 'admin' && complaint.from_user !== req.user.id) {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+
+    req.complaint = complaint;
+    next();
+  } catch (error) {
+    return res.status(500).json({ message: 'Server error' });
+  }
 };
 
-export const editComplaint = async (req, res) => {
-  const { id } = req.params;
+export const complaintAdminOnly = (req, res, next) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Only admin allowed' });
+  }
 
-  const data = await prisma.complaint.update({
-    where: { id },
-    data: req.body,
-  });
-
-  res.json(data);
-};
-
-export const deleteComplaint = async (req, res) => {
-  const { id } = req.params;
-
-  await prisma.complaint.delete({
-    where: { id },
-  });
-
-  res.json({ message: 'Deleted' });
+  next();
 };

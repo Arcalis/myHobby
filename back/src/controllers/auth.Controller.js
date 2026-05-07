@@ -27,20 +27,23 @@ const generateTokens = (user) => {
 
 export const register = async (req, res) => {
   try {
-    const { email, password, first_name, second_name} = req.body;
+    const { email, password, first_name, second_name } = req.body;
 
     const exist = await prisma.user.findFirst({ where: { email } });
     if (exist) return res.status(400).json({ message: 'User exists' });
 
     const hash = await bcrypt.hash(password, 10);
 
+    const name = `${second_name}_${first_name?.trim()?.[0] || ''}`.toLowerCase();
+
     const user = await prisma.user.create({
       data: {
         first_name,
         second_name,
+        name,
         email,
         password: hash,
-        role: 'user'
+        role: 'user',
       },
     });
 
