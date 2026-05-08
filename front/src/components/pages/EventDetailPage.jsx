@@ -16,22 +16,110 @@ export function EventDetailPage() {
   const [isFavorite, setIsFavorite] = useState(false);
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [tagsMap, setTagsMap] = useState({});
+  const [agesMap, setAgesMap] = useState({});
 
-  useEffect(() => {
-    const loadEvent = async () => {
-      try {
-        const data = await apiRequest(`/api/events/${id}`);
-        setEvent(data.event || data);
-      } catch (error) {
-        console.error(error);
-        setEvent(null);
-      } finally {
-        setLoading(false);
+  const loadEvent = async () => {
+    try {
+      const [tagsData, agesData] = await Promise.all([
+        apiRequest('/api/events/tags'),
+        apiRequest('/api/events/ages'),
+      ]);
+
+      const tagsObj = Object.fromEntries(tagsData.map(t => [t.id, t.tag]));
+      const agesObj = Object.fromEntries(agesData.map(a => [a.id, a.age_category]));
+
+      setTagsMap(tagsObj);
+      setAgesMap(agesObj);
+
+      const data = await apiRequest(`/api/events/${id}`);
+      const currentEvent = data.event || data;
+      setEvent(currentEvent);
+
+      if (isAuthenticated) {
+        const [registeredData, favoriteData] = await Promise.all([
+          apiRequest('/api/users/me/registrations').catch(() => []),
+          apiRequest('/api/users/me/favorites').catch(() => []),
+        ]);
+
+        setIsRegistered(
+          Array.isArray(registeredData) &&
+            registeredData.some(item => item.id === currentEvent.id)
+        );
+
+        setIsFavorite(
+          Array.isArray(favoriteData) &&
+            favoriteData.some(item => item.id === currentEvent.id)
+        );
+      } else {
+        setIsRegistered(false);
+        setIsFavorite(false);
       }
-    };
+    } catch (error) {
+      console.error(error);
+      setEvent(null);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    loadEvent();
-  }, [id]);
+useEffect(() => {
+  const fetchData = async () => {
+    await loadEvent();
+  };
+
+  fetchData();
+}, [id, isAuthenticated]);
+
+  const handleRegister = async () => {
+    if (!isAuthenticated) {
+      setShowLoginDialog(true);
+      return;
+    }
+
+    try {
+      if (isRegistered) {
+        await apiRequest(`/api/events/${id}/join`, {
+          method: 'DELETE',
+        });
+        setIsRegistered(false);
+      } else {
+        await apiRequest(`/api/events/${id}/join`, {
+          method: 'POST',
+        });
+        setIsRegistered(true);
+      }
+
+      await loadEvent();
+    } catch (error) {
+      console.error('Ошибка при записи/отписке:', error);
+    }
+  };
+
+  const handleFavorite = async () => {
+    if (!isAuthenticated) {
+      setShowLoginDialog(true);
+      return;
+    }
+
+    try {
+      if (isFavorite) {
+        await apiRequest(`/api/events/${id}/favorite`, {
+          method: 'DELETE',
+        });
+        setIsFavorite(false);
+      } else {
+        await apiRequest(`/api/events/${id}/favorite`, {
+          method: 'POST',
+        });
+        setIsFavorite(true);
+      }
+
+      await loadEvent();
+    } catch (error) {
+      console.error('Ошибка при добавлении/удалении из избранного:', error);
+    }
+  };
 
   if (loading) {
     return (
@@ -54,21 +142,10 @@ export function EventDetailPage() {
     );
   }
 
-  const handleRegister = () => {
-    if (!isAuthenticated) {
-      setShowLoginDialog(true);
-      return;
-    }
-    setIsRegistered(!isRegistered);
-  };
+  const totalSeats = Number(event.count_members ?? 0);
+  const occupiedSeats = Number(event.members ?? 0);
+  const occupancyPercent = (occupiedSeats / totalSeats) * 100;
 
-  const handleFavorite = () => {
-    if (!isAuthenticated) {
-      setShowLoginDialog(true);
-      return;
-    }
-    setIsFavorite(!isFavorite);
-  };
 
   return (
     <>
@@ -88,24 +165,28 @@ export function EventDetailPage() {
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
                   <span className="inline-block px-3 py-1 bg-primary/10 text-primary rounded text-sm font-medium">
-                    {event.category}
+                    {tagsMap[event.tag_id] || event.tag_id}
                   </span>
                   <span className="inline-block px-3 py-1 bg-muted text-muted-foreground rounded text-sm">
-                    {event.ageCategory}
+                    {agesMap[event.age_id] || event.age_id}
                   </span>
                 </div>
 
-                <h1 className="text-3xl font-semibold text-foreground leading-tight">{event.title}</h1>
+                <h1 className="text-3xl font-semibold text-foreground leading-tight">
+                  {event.name}
+                </h1>
 
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Building2 className="w-4 h-4" />
-                  <span className="text-sm">{event.organizerName}</span>
+                  <span className="text-sm">{event.author}</span>
                 </div>
               </div>
 
               <div className="space-y-4 border-t border-border pt-8">
                 <h2 className="font-medium text-foreground">Описание</h2>
-                <p className="text-muted-foreground leading-relaxed">{event.description}</p>
+                <p className="text-muted-foreground leading-relaxed">
+                  {event.desription}
+                </p>
               </div>
 
               <div className="space-y-4 border-t border-border pt-8">
@@ -143,7 +224,7 @@ export function EventDetailPage() {
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground mb-1">Место проведения</p>
-                      <p className="font-medium text-foreground">{event.location}</p>
+                      <p className="font-medium text-foreground">{event.address}</p>
                     </div>
                   </div>
 
@@ -163,12 +244,6 @@ export function EventDetailPage() {
                     <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
                       <Users className="w-5 h-5 text-muted-foreground" />
                     </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Доступно мест</p>
-                      <p className="font-medium text-foreground tabular-nums">
-                        {event.availableSeats} из {event.totalSeats}
-                      </p>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -176,10 +251,7 @@ export function EventDetailPage() {
               <div className="space-y-4 border-t border-border pt-8">
                 <h2 className="font-medium text-foreground">Организатор</h2>
                 <div className="bg-muted/50 rounded-lg p-6 space-y-3">
-                  <p className="font-medium text-foreground">{event.organizerName}</p>
-                  <p className="text-sm text-muted-foreground">
-                    Проверенный организатор образовательных мероприятий
-                  </p>
+                  <p className="font-medium text-foreground">{event.author}</p>
                 </div>
               </div>
             </div>
@@ -187,19 +259,18 @@ export function EventDetailPage() {
             <div className="space-y-4">
               <div className="bg-card border border-border rounded-lg p-6 space-y-4 sticky top-24">
                 <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">Доступно мест</p>
+                  <p className="text-sm text-muted-foreground">Свободно мест</p>
                   <div className="flex items-baseline gap-2">
                     <span className="text-3xl font-semibold text-foreground tabular-nums">
-                      {event.availableSeats}
+                      {occupiedSeats}
                     </span>
-                    <span className="text-sm text-muted-foreground">из {event.totalSeats}</span>
+                    <span className="text-sm text-muted-foreground">из {totalSeats}</span>
                   </div>
+
                   <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
                     <div
                       className="h-full bg-primary transition-all"
-                      style={{
-                        width: `${((event.totalSeats - event.availableSeats) / event.totalSeats) * 100}%`,
-                      }}
+                      style={{ width: `${Math.min(occupancyPercent, 100)}%` }}
                     />
                   </div>
                 </div>
@@ -207,10 +278,10 @@ export function EventDetailPage() {
                 <Button
                   className="w-full"
                   onClick={handleRegister}
-                  disabled={event.availableSeats === 0}
+                  disabled={!isRegistered && occupiedSeats === 0}
                   variant={isRegistered ? 'outline' : 'default'}
                 >
-                  {isRegistered ? 'Отменить запись' : event.availableSeats === 0 ? 'Мест нет' : 'Записаться'}
+                  {isRegistered ? 'Отменить запись' : occupiedSeats === 0 ? 'Мест нет' : 'Записаться'}
                 </Button>
 
                 <Button variant="outline" className="w-full gap-2" onClick={handleFavorite}>
@@ -224,10 +295,6 @@ export function EventDetailPage() {
                     <span className="font-medium text-foreground capitalize">
                       {event.format === 'online' ? 'Онлайн' : event.format === 'offline' ? 'Оффлайн' : 'Гибрид'}
                     </span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Возраст:</span>
-                    <span className="font-medium text-foreground">{event.ageCategory}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Дата:</span>

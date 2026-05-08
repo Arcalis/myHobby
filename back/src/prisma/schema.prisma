@@ -7,104 +7,92 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Таблица 1: users
 model User {
-  id           String    @id @default(uuid())
+  id           String      @id(map: "User_pkey") @default(uuid())
   name         String?
   first_name   String?
   second_name  String?
-  email        String    @unique
+  email        String      @unique(map: "User_email_key")
   password     String
   organizer_id String?
-  role         String    @default("user")
+  role         String      @default("user")
+  complaint    Complaint[]
+  user_event   UserEvent[]
+  organizer    Organizer?  @relation(fields: [organizer_id], references: [id], map: "User_organizer_id_fkey")
 
-  organizer    Organizer? @relation(fields: [organizer_id], references: [id])
-  user_event  UserEvent[]
-  complaint   Complaint[]  
   @@map("users")
 }
 
-// Таблица 7: complaints
 model Complaint {
   id         String   @id @default(uuid()) @map("id")
   from_user  String   @map("from_user")
   message    String   @map("message")
   created_at DateTime @default(now()) @map("created_at")
-
-  user User @relation(fields: [from_user], references: [id])
+  user       User     @relation(fields: [from_user], references: [id])
 
   @@map("complaints")
 }
 
-// Таблица 6: organizers
 model Organizer {
-  id      String   @id @default(uuid()) @map("id")
-  name    String   @map("name")
-  users   User[]   // пользователи, связанные с этим организатором
-  events  Event[]  // мероприятия этого организатора
+  id    String  @id @default(uuid()) @map("id")
+  name  String  @map("name")
+  event Event[]
+  users User[]
 
   @@map("organizers")
 }
 
-// Таблица 5: ages
 model Age {
-  id           String   @id @default(uuid()) @map("id")
-  age_category String   @map("age_category")
-  event       Event[]  // мероприятия этой возрастной категории
+  id           String  @id @default(uuid()) @map("id")
+  age_category String  @map("age_category")
+  event        Event[]
 
   @@map("ages")
 }
 
-// Таблица 4: tags
 model Tag {
-  id      String   @id @default(uuid()) @map("id")
-  tag     String   @unique @map("tag")
-  events  Event[]  // мероприятия с этим тегом (через связь many-to-many, см. ниже)
+  id    String  @id @default(uuid()) @map("id")
+  tag   String  @unique @map("tag")
+  event Event[]
 
   @@map("tags")
 }
 
-// Таблица 2: events
 model Event {
-  id            String    @id @default(uuid()) @map("id")
-  name          String    @map("name")
-  is_reccuring  Boolean?  @default(false) @map("is_reccuring")
-  format        String    @map("format")
-  desription    String?   @map("desription")  // опечатка в исходном названии
-  created       DateTime? @default(now()) @map("created")
-  date          DateTime? @map("date")       // дата проведения
-  time          String?   @map("time")       // время как строка, либо можно DateTime
-  count_members Int?      @map("count_members")
-  address       String?   @map("address")
-  author        String?   @map("author")
-  tag_id        String?   @map("tag_id")
-  age_id        String?   @map("age_id")
-  organizer_id  String?   @map("organizer_id")
-  approved      Boolean?  @default(false) @map("approved")
-  active        Boolean?  @default(true) @map("active")
-  deleted       Boolean?  @default(false) @map("deleted")
-
-  // Связи
-  tag          Tag?        @relation(fields: [tag_id], references: [id])
-  age          Age?        @relation(fields: [age_id], references: [id])
-  organizer    Organizer?  @relation(fields: [organizer_id], references: [id])
-  user_event  UserEvent[]
+  id            String      @id @default(uuid()) @map("id")
+  name          String      @map("name")
+  is_reccuring  Boolean?    @default(false) @map("is_reccuring")
+  format        String      @map("format")
+  desription    String?     @map("desription")
+  created       DateTime?   @default(now()) @map("created")
+  date          DateTime?   @map("date")
+  time          String?     @map("time")
+  count_members Int?        @map("count_members")
+  address       String?     @map("address")
+  author        String?     @map("author")
+  tag_id        String?     @map("tag_id")
+  age_id        String?     @map("age_id")
+  organizer_id  String?     @map("organizer_id")
+  approved      Boolean?    @default(false) @map("approved")
+  active        Boolean?    @default(true) @map("active")
+  deleted       Boolean?    @default(false) @map("deleted")
+  age           Age?        @relation(fields: [age_id], references: [id])
+  organizer     Organizer?  @relation(fields: [organizer_id], references: [id])
+  tag           Tag?        @relation(fields: [tag_id], references: [id])
+  user_event    UserEvent[]
 
   @@map("events")
 }
 
-// Таблица 3: user_event
 model UserEvent {
   id        String   @id @default(uuid()) @map("id")
   id_user   String   @map("id_user")
   id_event  String   @map("id_event")
   favorites Boolean? @default(false) @map("favorites")
   member    Boolean? @default(false) @map("member")
-
-  user  User  @relation(fields: [id_user], references: [id])
-  event Event @relation(fields: [id_event], references: [id])
+  event     Event    @relation(fields: [id_event], references: [id])
+  user      User     @relation(fields: [id_user], references: [id])
 
   @@unique([id_user, id_event])
-  @@map("user_events")
+  @@map("user_event")
 }
-

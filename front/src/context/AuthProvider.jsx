@@ -15,12 +15,11 @@ useEffect(() => {
         setLoading(false);
         return;
       }
-      // Запрос данных текущего пользователя
       const userData = await apiRequest('/api/users/me');
       setUser(userData);
       setIsAuth(true);
-    } catch (err) {
-
+    } catch (e) {
+      console.error(e);
       localStorage.removeItem('accessToken');
       setUser(null);
       setIsAuth(false);

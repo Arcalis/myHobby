@@ -7,8 +7,8 @@ import { apiRequest } from '../../api/client';
 export function HomePage() {
   const [featuredEvents, setFeaturedEvents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [tagsMap, setTagsMap] = useState({}); 
-  const [agesMap, setAgesMap] = useState({}); 
+  const [tagsMap, setTagsMap] = useState({});
+  const [agesMap, setAgesMap] = useState({});
 
 
   useEffect(() => {
@@ -21,7 +21,7 @@ export function HomePage() {
         ]);
 
         const tagsObj = Object.fromEntries(tagsData.map(t => [t.id, t.tag]));
-        const agesObj = Object.fromEntries(agesData.map(a => [a.id, a.age]));
+        const agesObj = Object.fromEntries(agesData.map(a => [a.id, a.age_category]));
 
         setTagsMap(tagsObj);
         setAgesMap(agesObj);
@@ -29,7 +29,14 @@ export function HomePage() {
         const events = Array.isArray(eventsData)
           ? eventsData
           : eventsData.events || [];
-        setFeaturedEvents(events.slice(0, 3));
+
+        const shuffled = [...events];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+
+        setFeaturedEvents(shuffled.slice(0, 3));
       } catch (error) {
         console.error('Ошибка загрузки данных:', error);
         setFeaturedEvents([]);
@@ -156,11 +163,10 @@ export function HomePage() {
                   className="block border border-border rounded-lg overflow-hidden bg-card hover:border-primary/50 transition-colors"
                 >
                   <div className="p-6 space-y-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <h3 className="font-medium text-foreground leading-snug flex-1">
+                    <div className="flex items-start justify-between gap-4 min-h-[56px]">
+                      <h3 className="font-medium text-foreground leading-snug line-clamp-2">
                         {event.name}
                       </h3>
-                      {/* Теперь выводим название тега вместо ID */}
                       <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded whitespace-nowrap">
                         {tagsMap[event.tag_id] || event.tag_id}
                       </span>
@@ -194,7 +200,7 @@ export function HomePage() {
                       <div className="flex items-center justify-between">
                         <span>Мест:</span>
                         <span className="text-foreground font-medium">
-                          {event.count_members} из {event.max_members ?? '?'}
+                          {event.members} из {event.count_members ?? '?'}
                         </span>
                       </div>
                     </div>

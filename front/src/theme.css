@@ -121,7 +121,7 @@
 
 @layer base {
   * {
-    @apply border outline;
+    @apply border-border;
   }
 
   body {

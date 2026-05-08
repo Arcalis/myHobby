@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
@@ -14,13 +14,22 @@ export default function EventsPage() {
   const [selectedFormats, setSelectedFormats] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [selectedAges, setSelectedAges] = useState([]);
+  const [tagsMap, setTagsMap] = useState({});
+  const [agesMap, setAgesMap] = useState({});
 
   useEffect(() => {
     const loadEvents = async () => {
       try {
-        const data = await apiRequest('/api/events');
-        const items = Array.isArray(data) ? data : data.events || [];
-        setEvents(items);
+        const [eventsData, tagsData, agesData] = await Promise.all([
+          apiRequest('/api/events'),
+          apiRequest('/api/events/tags'),
+          apiRequest('/api/events/ages'),
+        ]);
+
+        setTagsMap(Object.fromEntries(tagsData.map((t) => [t.id, t.tag])));
+        setAgesMap(Object.fromEntries(agesData.map((a) => [a.id, a.age_category])));
+
+        setEvents(Array.isArray(eventsData) ? eventsData : []);
       } catch (error) {
         console.error(error);
         setEvents([]);
@@ -33,27 +42,42 @@ export default function EventsPage() {
   }, []);
 
   const formats = ['online', 'offline', 'hybrid'];
-  const categories = [...new Set(events.map((event) => event.category))];
-  const ages = [...new Set(events.map((event) => event.ageCategory))];
+
+  const categories = useMemo(
+    () => [...new Set(events.map((event) => event.tag_id).filter(Boolean))],
+    [events]
+  );
+
+  const ages = useMemo(
+    () => [...new Set(events.map((event) => event.age_id).filter(Boolean))],
+    [events]
+  );
 
   const filteredEvents = events.filter((event) => {
     const q = searchQuery.toLowerCase();
 
+    const categoryLabel = tagsMap[event.tag_id] || '';
+    const ageLabel = agesMap[event.age_id] || '';
+    const title = event.name || '';
+    const description = event.desription || '';
+    const author = event.author || '';
+
     const matchesSearch =
       searchQuery === '' ||
-      event.title.toLowerCase().includes(q) ||
-      event.description.toLowerCase().includes(q) ||
-      event.organizerName.toLowerCase().includes(q);
+      title.toLowerCase().includes(q) ||
+      description.toLowerCase().includes(q) ||
+      author.toLowerCase().includes(q) ||
+      categoryLabel.toLowerCase().includes(q) ||
+      ageLabel.toLowerCase().includes(q);
 
     const matchesFormat =
       selectedFormats.length === 0 || selectedFormats.includes(event.format);
 
     const matchesCategory =
-      selectedCategories.length === 0 ||
-      selectedCategories.includes(event.category);
+      selectedCategories.length === 0 || selectedCategories.includes(event.tag_id);
 
     const matchesAge =
-      selectedAges.length === 0 || selectedAges.includes(event.ageCategory);
+      selectedAges.length === 0 || selectedAges.includes(event.age_id);
 
     return matchesSearch && matchesFormat && matchesCategory && matchesAge;
   });
@@ -88,7 +112,7 @@ export default function EventsPage() {
                 placeholder="Поиск..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 w-full border border-border bg-input-background"
+                className="pl-10 w-full border border-border bg-card"
               />
             </div>
 
@@ -96,10 +120,10 @@ export default function EventsPage() {
               selectedFormats.length > 0 ||
               selectedCategories.length > 0 ||
               selectedAges.length > 0) && (
-              <Button variant="outline" onClick={clearFilters} className="shrink-0">
-                Сбросить фильтры
-              </Button>
-            )}
+                <Button variant="outline" onClick={clearFilters} className="shrink-0">
+                  Сбросить фильтры
+                </Button>
+              )}
           </div>
         </div>
       </section>
@@ -114,9 +138,7 @@ export default function EventsPage() {
               </div>
 
               <div className="space-y-3">
-                <h3 className="text-sm font-medium text-foreground">
-                  Формат проведения
-                </h3>
+                <h3 className="text-sm font-medium text-foreground">Формат проведения</h3>
                 <div className="space-y-2">
                   {formats.map((format) => (
                     <div key={format} className="flex items-center gap-2">
@@ -145,24 +167,21 @@ export default function EventsPage() {
               <div className="space-y-3 border-t border-border pt-6">
                 <h3 className="text-sm font-medium text-foreground">Категория</h3>
                 <div className="space-y-2">
-                  {categories.map((category) => (
-                    <div key={category} className="flex items-center gap-2">
-                      <Checkbox
-                        id={`category-${category}`}
-                        checked={selectedCategories.includes(category)}
+                  {categories.map((tagId) => (
+                    <div key={tagId} className="flex items-center gap-2">
+                      <Checkbox className="border-2 border-muted-foreground data-[state=unchecked]:border-muted-foreground/50"
+                        id={`category-${tagId}`}
+                        checked={selectedCategories.includes(tagId)}
                         onCheckedChange={() =>
-                          toggleFilter(
-                            category,
-                            selectedCategories,
-                            setSelectedCategories
-                          )
+                          toggleFilter(tagId, selectedCategories, setSelectedCategories)
+                      
                         }
                       />
                       <Label
-                        htmlFor={`category-${category}`}
+                        htmlFor={`category-${tagId}`}
                         className="text-sm text-muted-foreground cursor-pointer"
                       >
-                        {category}
+                        {tagsMap[tagId] || tagId}
                       </Label>
                     </div>
                   ))}
@@ -170,24 +189,22 @@ export default function EventsPage() {
               </div>
 
               <div className="space-y-3 border-t border-border pt-6">
-                <h3 className="text-sm font-medium text-foreground">
-                  Возрастная категория
-                </h3>
+                <h3 className="text-sm font-medium text-foreground">Возрастная категория</h3>
                 <div className="space-y-2">
-                  {ages.map((age) => (
-                    <div key={age} className="flex items-center gap-2">
-                      <Checkbox
-                        id={`age-${age}`}
-                        checked={selectedAges.includes(age)}
+                  {ages.map((ageId) => (
+                    <div key={ageId} className="flex items-center gap-2">
+                      <Checkbox className="border-2 border-muted-foreground data-[state=unchecked]:border-muted-foreground/50"
+                        id={`age-${ageId}`}
+                        checked={selectedAges.includes(ageId)}
                         onCheckedChange={() =>
-                          toggleFilter(age, selectedAges, setSelectedAges)
+                          toggleFilter(ageId, selectedAges, setSelectedAges)
                         }
                       />
                       <Label
-                        htmlFor={`age-${age}`}
+                        htmlFor={`age-${ageId}`}
                         className="text-sm text-muted-foreground cursor-pointer"
                       >
-                        {age}
+                        {agesMap[ageId] || ageId}
                       </Label>
                     </div>
                   ))}
@@ -200,9 +217,7 @@ export default function EventsPage() {
             <div className="flex items-center justify-between">
               <p className="text-sm text-muted-foreground">
                 Найдено мероприятий:{' '}
-                <span className="font-medium text-foreground">
-                  {filteredEvents.length}
-                </span>
+                <span className="font-medium text-foreground">{filteredEvents.length}</span>
               </p>
             </div>
 
@@ -232,13 +247,13 @@ export default function EventsPage() {
                         <th className="px-4 py-3 w-[20%] text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                           Место
                         </th>
-                        <th className="px-4 py-3 w-[8%] text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        <th className="px-4 py-3 w-[14%] text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                           Возраст
                         </th>
                         <th className="px-4 py-3 w-[8%] text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                           Мест
                         </th>
-                        <th className="px-4 py-3 w-[18%]"></th>
+                        <th className="px-4 py-3 w-[14%]"></th>
                       </tr>
                     </thead>
 
@@ -251,13 +266,13 @@ export default function EventsPage() {
                                 to={`/events/${event.id}`}
                                 className="block font-medium text-foreground hover:text-primary transition-colors"
                               >
-                                {event.title}
+                                {event.name}
                               </Link>
                               <p className="text-xs text-muted-foreground">
-                                {event.organizerName}
+                                {event.author}
                               </p>
-                              <span className="inline-block text-xs py-0.5 bg-primary/10 text-primary rounded">
-                                {event.category}
+                              <span className="inline-block text-xs py-0.5 px-2 bg-primary/10 text-primary rounded">
+                                {tagsMap[event.tag_id] || 'Без категории'}
                               </span>
                             </div>
                           </td>
@@ -267,11 +282,13 @@ export default function EventsPage() {
                               <Calendar className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                               <div className="min-w-0 leading-tight">
                                 <div className="font-medium whitespace-nowrap">
-                                  {new Date(event.date).toLocaleDateString('ru-RU')}
+                                  {event.date
+                                    ? new Date(event.date).toLocaleDateString('ru-RU')
+                                    : '—'}
                                 </div>
                                 <div className="text-xs text-muted-foreground flex items-center gap-1 whitespace-nowrap">
                                   <Clock className="w-3 h-3" />
-                                  {event.time}
+                                  {event.time || '—'}
                                 </div>
                               </div>
                             </div>
@@ -290,13 +307,13 @@ export default function EventsPage() {
                           <td className="px-4 py-4 align-top">
                             <div className="flex items-center gap-2 text-sm text-muted-foreground min-w-0">
                               <MapPin className="w-4 h-4 flex-shrink-0" />
-                              <span>{event.location}</span>
+                              <span>{event.address || '—'}</span>
                             </div>
                           </td>
 
                           <td className="px-4 py-4 align-top">
                             <span className="text-sm text-foreground whitespace-nowrap">
-                              {event.ageCategory}
+                              {agesMap[event.age_id] || '—'}
                             </span>
                           </td>
 
@@ -304,7 +321,7 @@ export default function EventsPage() {
                             <div className="flex items-center gap-2 whitespace-nowrap">
                               <Users className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                               <span className="text-sm font-medium text-foreground tabular-nums">
-                                {event.availableSeats}/{event.totalSeats}
+                                {event.members ?? 0}/{event.count_members ?? 0}
                               </span>
                             </div>
                           </td>

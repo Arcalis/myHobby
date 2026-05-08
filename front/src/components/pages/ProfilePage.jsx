@@ -3,8 +3,81 @@ import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
-import { Calendar, Heart, User, Settings, FileText } from 'lucide-react';
+import { Calendar, Heart, User, Settings, FileText, MapPin, Clock } from 'lucide-react';
 import { apiRequest } from '../../api/client';
+
+function EventCard({ event, actions, favorite = false }) {
+  const title = event.name || event.title;
+  const description = event.desription || event.description || '';
+  const category = event.tag?.tag || event.category || 'Без категории';
+  const date = event.date ? new Date(event.date).toLocaleDateString('ru-RU') : '—';
+  const time = event.time || '—';
+  const format =
+    event.format === 'online' ? 'Онлайн' : event.format === 'offline' ? 'Оффлайн' : 'Гибрид';
+
+  return (
+    <div className="bg-card border border-border rounded-lg p-6">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1 space-y-3">
+          <div className="flex items-start gap-3 flex-wrap">
+            <span className="px-2 py-1 bg-primary/10 text-primary rounded text-xs font-medium">
+              {category}
+            </span>
+            {favorite && (
+              <span className="px-2 py-1 bg-pink-500/10 text-pink-600 rounded text-xs font-medium">
+                В избранном
+              </span>
+            )}
+          </div>
+
+          <Link to={`/events/${event.id}`}>
+            <h3 className="font-medium text-foreground hover:text-primary transition-colors">
+              {title}
+            </h3>
+          </Link>
+
+          {description ? (
+            <p className="text-sm text-muted-foreground line-clamp-2">{description}</p>
+          ) : null}
+
+          <div className="grid sm:grid-cols-3 gap-4 text-sm pt-2">
+            <div>
+              <p className="text-muted-foreground text-xs mb-1">Дата</p>
+              <p className="text-foreground font-medium">{date}</p>
+            </div>
+
+            <div>
+              <p className="text-muted-foreground text-xs mb-1">Время</p>
+              <p className="text-foreground font-medium">{time}</p>
+            </div>
+
+            <div>
+              <p className="text-muted-foreground text-xs mb-1">Формат</p>
+              <p className="text-foreground font-medium">{format}</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4 text-xs text-muted-foreground pt-1">
+            {event.address && (
+              <span className="inline-flex items-center gap-1">
+                <MapPin className="w-3.5 h-3.5" />
+                {event.address}
+              </span>
+            )}
+            {typeof event.members === 'number' && (
+              <span className="inline-flex items-center gap-1">
+                <User className="w-3.5 h-3.5" />
+                {event.members} участников
+              </span>
+            )}
+          </div>
+        </div>
+
+        {actions ? <div className="flex gap-2">{actions}</div> : null}
+      </div>
+    </div>
+  );
+}
 
 export function ProfilePage() {
   const { user, isAuthenticated } = useAuth();
@@ -17,10 +90,14 @@ export function ProfilePage() {
   useEffect(() => {
     const loadProfileData = async () => {
       try {
-        const data = await apiRequest('/api/users/profile');
-        setRegisteredEvents(data.registeredEvents || []);
-        setFavoriteEvents(data.favoriteEvents || []);
-        setMyEvents(data.myEvents || []);
+        const [registeredData, favoriteData] = await Promise.all([
+          apiRequest(`/api/users/me/registrations`),
+          apiRequest(`/api/users/me/favorites`),
+        ]);
+
+        setRegisteredEvents(Array.isArray(registeredData) ? registeredData : []);
+        setFavoriteEvents(Array.isArray(favoriteData) ? favoriteData : []);
+        setMyEvents([]);
       } catch (error) {
         console.error(error);
         setRegisteredEvents([]);
@@ -105,53 +182,19 @@ export function ProfilePage() {
             ) : (
               <div className="space-y-4">
                 {registeredEvents.map((event) => (
-                  <div key={event.id} className="bg-card border border-border rounded-lg p-6">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 space-y-3">
-                        <div className="flex items-start gap-3">
-                          <span className="px-2 py-1 bg-primary/10 text-primary rounded text-xs font-medium">
-                            {event.category}
-                          </span>
-                          <span className="px-2 py-1 bg-green-500/10 text-green-600 rounded text-xs font-medium">
-                            Активна
-                          </span>
-                        </div>
-                        <Link to={`/events/${event.id}`}>
-                          <h3 className="font-medium text-foreground hover:text-primary transition-colors">
-                            {event.title}
-                          </h3>
-                        </Link>
-                        <div className="grid sm:grid-cols-3 gap-4 text-sm">
-                          <div>
-                            <p className="text-muted-foreground text-xs mb-1">Дата</p>
-                            <p className="text-foreground font-medium">
-                              {new Date(event.date).toLocaleDateString('ru-RU')}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground text-xs mb-1">Время</p>
-                            <p className="text-foreground font-medium">{event.time}</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground text-xs mb-1">Формат</p>
-                            <p className="text-foreground font-medium capitalize">
-                              {event.format === 'online' ? 'Онлайн' : event.format === 'offline' ? 'Оффлайн' : 'Гибрид'}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
+                  <EventCard
+                    key={event.id}
+                    event={event}
+                    actions={
+                      <>
                         <Link to={`/events/${event.id}`}>
                           <Button variant="outline" size="sm">
                             Подробнее
                           </Button>
                         </Link>
-                        <Button variant="outline" size="sm">
-                          Отменить
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
+                      </>
+                    }
+                  />
                 ))}
               </div>
             )}
@@ -176,30 +219,18 @@ export function ProfilePage() {
             ) : (
               <div className="grid md:grid-cols-2 gap-4">
                 {favoriteEvents.map((event) => (
-                  <div key={event.id} className="bg-card border border-border rounded-lg p-6 space-y-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <span className="px-2 py-1 bg-primary/10 text-primary rounded text-xs font-medium">
-                        {event.category}
-                      </span>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                        <Heart className="w-4 h-4 fill-current text-primary" />
-                      </Button>
-                    </div>
-                    <Link to={`/events/${event.id}`}>
-                      <h3 className="font-medium text-foreground hover:text-primary transition-colors">
-                        {event.title}
-                      </h3>
-                    </Link>
-                    <p className="text-sm text-muted-foreground line-clamp-2">{event.description}</p>
-                    <div className="pt-3 border-t border-border text-xs">
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Дата:</span>
-                        <span className="text-foreground font-medium">
-                          {new Date(event.date).toLocaleDateString('ru-RU')}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+                  <EventCard
+                    key={event.id}
+                    event={event}
+                    favorite
+                    actions={
+                      <Link to={`/events/${event.id}`}>
+                        <Button variant="outline" size="sm">
+                          Подробнее
+                        </Button>
+                      </Link>
+                    }
+                  />
                 ))}
               </div>
             )}
@@ -219,53 +250,20 @@ export function ProfilePage() {
               ) : (
                 <div className="space-y-4">
                   {myEvents.map((event) => (
-                    <div key={event.id} className="bg-card border border-border rounded-lg p-6">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1 space-y-3">
-                          <div className="flex items-start gap-3">
-                            <span className="px-2 py-1 bg-primary/10 text-primary rounded text-xs font-medium">
-                              {event.category}
-                            </span>
-                            <span className="px-2 py-1 bg-green-500/10 text-green-600 rounded text-xs font-medium">
-                              Опубликовано
-                            </span>
-                          </div>
-                          <h3 className="font-medium text-foreground">{event.title}</h3>
-                          <div className="grid sm:grid-cols-4 gap-4 text-sm">
-                            <div>
-                              <p className="text-muted-foreground text-xs mb-1">Дата</p>
-                              <p className="text-foreground font-medium">
-                                {new Date(event.date).toLocaleDateString('ru-RU')}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-muted-foreground text-xs mb-1">Зарегистрировано</p>
-                              <p className="text-foreground font-medium tabular-nums">
-                                {event.totalSeats - event.availableSeats} чел.
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-muted-foreground text-xs mb-1">Доступно мест</p>
-                              <p className="text-foreground font-medium tabular-nums">{event.availableSeats}</p>
-                            </div>
-                            <div>
-                              <p className="text-muted-foreground text-xs mb-1">Формат</p>
-                              <p className="text-foreground font-medium capitalize">
-                                {event.format === 'online' ? 'Онлайн' : event.format === 'offline' ? 'Оффлайн' : 'Гибрид'}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
+                    <EventCard
+                      key={event.id}
+                      event={event}
+                      actions={
+                        <>
                           <Button variant="outline" size="sm">
                             Редактировать
                           </Button>
                           <Button variant="outline" size="sm">
                             Участники
                           </Button>
-                        </div>
-                      </div>
-                    </div>
+                        </>
+                      }
+                    />
                   ))}
                 </div>
               )}

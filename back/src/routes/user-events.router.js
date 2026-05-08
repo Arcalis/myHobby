@@ -1,4 +1,5 @@
 import express from 'express';
+import { authMiddleware } from '../middleware/user.middleware.js';
 import {
   favorites,
   registrations,
@@ -10,12 +11,12 @@ import {
 
 const userEventsRoutes = express.Router();
 
-userEventsRoutes.get('/users/me/favorites', favorites);
-userEventsRoutes.get('/users/me/registrations', registrations);
+userEventsRoutes.get('/users/me/favorites', authMiddleware, favorites);
+userEventsRoutes.get('/users/me/registrations', authMiddleware, registrations);
 
-userEventsRoutes.post('/events/:id/join', join);
-userEventsRoutes.post('/events/:id/favorite', favorite);
-userEventsRoutes.delete('/events/:id/join', deleteJoin);
-userEventsRoutes.delete('/events/:id/favorite', deleteFavorite);
+userEventsRoutes.post('/events/:id/join', authMiddleware, join);
+userEventsRoutes.post('/events/:id/favorite', authMiddleware, favorite);
+userEventsRoutes.delete('/events/:id/join', authMiddleware, deleteJoin);
+userEventsRoutes.delete('/events/:id/favorite', authMiddleware, deleteFavorite);
 
 export default userEventsRoutes;
