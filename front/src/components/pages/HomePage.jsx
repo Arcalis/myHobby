@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { Button } from '../ui/button';
 import { Search, Calendar, Users, Shield, ArrowRight } from 'lucide-react';
 import { apiRequest } from '../../api/client';
+import { EventCard } from '../ui/EventCard';
+
 
 export function HomePage() {
   const [featuredEvents, setFeaturedEvents] = useState([]);
@@ -157,55 +159,12 @@ export function HomePage() {
           ) : (
             <div className="grid md:grid-cols-3 gap-6">
               {featuredEvents.map((event) => (
-                <Link
+                <EventCard
                   key={event.id}
-                  to={`/events/${event.id}`}
-                  className="block border border-border rounded-lg overflow-hidden bg-card hover:border-primary/50 transition-colors"
-                >
-                  <div className="p-6 space-y-4">
-                    <div className="flex items-start justify-between gap-4 min-h-[56px]">
-                      <h3 className="font-medium text-foreground leading-snug line-clamp-2">
-                        {event.name}
-                      </h3>
-                      <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded whitespace-nowrap">
-                        {tagsMap[event.tag_id] || event.tag_id}
-                      </span>
-                    </div>
-
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      {event.description}
-                    </p>
-
-                    <div className="space-y-2 text-xs text-muted-foreground border-t border-border pt-4">
-                      <div className="flex items-center justify-between">
-                        <span>Дата:</span>
-                        <span className="text-foreground font-medium">
-                          {new Date(event.date).toLocaleDateString('ru-RU')}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span>Формат:</span>
-                        <span className="text-foreground font-medium capitalize">
-                          {event.format}
-                        </span>
-                      </div>
-                      {/* Строка возраста */}
-                      <div className="flex items-center justify-between">
-                        <span>Возраст:</span>
-                        <span className="text-foreground font-medium">
-                          {agesMap[event.age_id] || event.age_id}
-                        </span>
-                      </div>
-                      {/* Исправленное отображение занятых/всего мест */}
-                      <div className="flex items-center justify-between">
-                        <span>Мест:</span>
-                        <span className="text-foreground font-medium">
-                          {event.members} из {event.count_members ?? '?'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
+                  event={event}
+                  tagsMap={tagsMap}
+                  agesMap={agesMap}
+                />
               ))}
             </div>
           )}

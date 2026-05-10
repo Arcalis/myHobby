@@ -65,8 +65,8 @@ model Event {
   format        String      @map("format")
   desription    String?     @map("desription")
   created       DateTime?   @default(now()) @map("created")
-  date          DateTime?   @map("date")
-  time          String?     @map("time")
+  date  DateTime? @map("date") @db.Date
+  time  String?   @map("time")
   count_members Int?        @map("count_members")
   address       String?     @map("address")
   author        String?     @map("author")

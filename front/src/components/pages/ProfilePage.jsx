@@ -5,6 +5,8 @@ import { Button } from '../ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Calendar, Heart, User, Settings, FileText, MapPin, Clock } from 'lucide-react';
 import { apiRequest } from '../../api/client';
+import { SettingsDialog } from '../ui/settingDialog';
+
 
 function EventCard({ event, actions, favorite = false }) {
   const title = event.name || event.title;
@@ -12,8 +14,7 @@ function EventCard({ event, actions, favorite = false }) {
   const category = event.tag?.tag || event.category || 'Без категории';
   const date = event.date ? new Date(event.date).toLocaleDateString('ru-RU') : '—';
   const time = event.time || '—';
-  const format =
-    event.format === 'online' ? 'Онлайн' : event.format === 'offline' ? 'Оффлайн' : 'Гибрид';
+  const format = event.format === 'online' ? 'Онлайн' : event.format === 'offline' ? 'Оффлайн' : 'Гибрид';
 
   return (
     <div className="bg-card border border-border rounded-lg p-6">
@@ -80,12 +81,13 @@ function EventCard({ event, actions, favorite = false }) {
 }
 
 export function ProfilePage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, updateUser, isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState('registered');
   const [registeredEvents, setRegisteredEvents] = useState([]);
   const [favoriteEvents, setFavoriteEvents] = useState([]);
   const [myEvents, setMyEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
     const loadProfileData = async () => {
@@ -110,6 +112,10 @@ export function ProfilePage() {
 
     loadProfileData();
   }, []);
+
+const handleUserUpdated = (updated) => {
+  updateUser(updated); 
+};
 
   if (!isAuthenticated || !user) {
     return <Navigate to="/" replace />;
@@ -136,12 +142,21 @@ export function ProfilePage() {
                 </span>
               </div>
             </div>
-            <Button variant="outline" className="gap-2">
+            <Button variant="outline" className="gap-2" onClick={() => setShowSettings(true)}>
               <Settings className="w-4 h-4" />
               Настройки
             </Button>
+            
           </div>
+
         </div>
+
+        <SettingsDialog
+          open={showSettings}
+          onOpenChange={setShowSettings}
+          user={user}
+          onUpdated={handleUserUpdated}
+        />
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-6">
@@ -269,7 +284,9 @@ export function ProfilePage() {
               )}
             </TabsContent>
           )}
+
         </Tabs>
+
       </div>
     </div>
   );

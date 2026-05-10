@@ -4,7 +4,7 @@ import { apiRequest } from '../api/client';
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true); // важно!
+  const [loading, setLoading] = useState(true); 
   const [isAuth, setIsAuth] = useState(false);
 
 useEffect(() => {
@@ -73,10 +73,15 @@ useEffect(() => {
     setIsAuth(false);
   };
 
+  const updateUser = (data) => {
+  setUser((prev) => ({ ...prev, ...data }));
+};
+
   return (
     <AuthContext.Provider
       value={{
         user,
+        updateUser,
         loading,
         token,
         isAuthenticated: isAuth,

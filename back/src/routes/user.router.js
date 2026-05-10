@@ -4,7 +4,7 @@ import {
   listUser,
   me,
   profile,
-  editUser,
+  editMe,
   editRole,
   blockUser,
   deleteUser,
@@ -12,12 +12,12 @@ import {
 
 const userRoutes = express.Router();
 
-userRoutes.get('/', listUser);
+userRoutes.get('/', authMiddleware, listUser);
 userRoutes.get('/me', authMiddleware, me);
 userRoutes.get('/profile', authMiddleware, profile);
-userRoutes.patch('/:id/editUser', editUser);
-userRoutes.patch('/:id/role', editRole);
-userRoutes.patch('/:id/block', blockUser);
-userRoutes.delete('/:id', deleteUser);
+userRoutes.patch('/me', authMiddleware, editMe);
+userRoutes.patch('/:id/role', authMiddleware, editRole);
+userRoutes.patch('/:id/block', authMiddleware, blockUser);
+userRoutes.delete('/:id', authMiddleware, deleteUser);
 
 export default userRoutes;

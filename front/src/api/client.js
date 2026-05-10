@@ -16,7 +16,9 @@ export async function apiRequest(path, options = {}) {
   const data = await res.json();
 
   if (!res.ok) {
-    throw new Error(data.message || 'Ошибка запроса');
+    const err = new Error('API error');
+    err.status = res.status; 
+    throw err;
   }
 
   return data;
