@@ -8,34 +8,35 @@ datasource db {
 }
 
 model User {
-  id           String      @id(map: "User_pkey") @default(uuid())
-  name         String?
+  id           Int         @id @default(autoincrement())
+  name         String?     
   first_name   String?
   second_name  String?
-  email        String      @unique(map: "User_email_key")
+  email        String      @unique
   password     String
-  organizer_id String?
+  organizer_id Int?
   role         String      @default("user")
+  blocked      Boolean?    @default(false)
   complaint    Complaint[]
   user_event   UserEvent[]
-  organizer    Organizer?  @relation(fields: [organizer_id], references: [id], map: "User_organizer_id_fkey")
+  organizer    Organizer?  @relation(fields: [organizer_id], references: [id])
 
   @@map("users")
 }
 
 model Complaint {
-  id         String   @id @default(uuid()) @map("id")
-  from_user  String   @map("from_user")
-  message    String   @map("message")
-  created_at DateTime @default(now()) @map("created_at")
+  id         Int      @id @default(autoincrement())
+  from_user  Int
+  message    String
+  created_at DateTime @default(now())
   user       User     @relation(fields: [from_user], references: [id])
 
   @@map("complaints")
 }
 
 model Organizer {
-  id    String  @id @default(uuid()) @map("id")
-  name  String  @map("name")
+  id    Int     @id @default(autoincrement())
+  name  String  @unique
   event Event[]
   users User[]
 
@@ -43,39 +44,39 @@ model Organizer {
 }
 
 model Age {
-  id           String  @id @default(uuid()) @map("id")
-  age_category String  @map("age_category")
+  id           Int     @id @default(autoincrement())
+  age_category String
   event        Event[]
 
   @@map("ages")
 }
 
 model Tag {
-  id    String  @id @default(uuid()) @map("id")
-  tag   String  @unique @map("tag")
+  id    Int     @id @default(autoincrement())
+  tag   String  @unique
   event Event[]
 
   @@map("tags")
 }
 
 model Event {
-  id            String      @id @default(uuid()) @map("id")
-  name          String      @map("name")
-  is_reccuring  Boolean?    @default(false) @map("is_reccuring")
-  format        String      @map("format")
-  desription    String?     @map("desription")
-  created       DateTime?   @default(now()) @map("created")
-  date  DateTime? @map("date") @db.Date
-  time  String?   @map("time")
-  count_members Int?        @map("count_members")
-  address       String?     @map("address")
-  author        String?     @map("author")
-  tag_id        String?     @map("tag_id")
-  age_id        String?     @map("age_id")
-  organizer_id  String?     @map("organizer_id")
-  approved      Boolean?    @default(false) @map("approved")
-  active        Boolean?    @default(true) @map("active")
-  deleted       Boolean?    @default(false) @map("deleted")
+  id            Int         @id @default(autoincrement())
+  name          String @unique
+  is_reccuring  Boolean?    @default(false)
+  format        String
+  desription    String?
+  created       DateTime?   @default(now())
+  date          DateTime?   @db.Date
+  time          String?
+  count_members Int?
+  address       String?
+  author        Int?
+  tag_id        Int?
+  age_id        Int?
+  organizer_id  Int?
+  approved      Boolean?    @default(false)
+  active        Boolean?    @default(true)
+  deleted       Boolean?    @default(false)
   age           Age?        @relation(fields: [age_id], references: [id])
   organizer     Organizer?  @relation(fields: [organizer_id], references: [id])
   tag           Tag?        @relation(fields: [tag_id], references: [id])
@@ -85,11 +86,11 @@ model Event {
 }
 
 model UserEvent {
-  id        String   @id @default(uuid()) @map("id")
-  id_user   String   @map("id_user")
-  id_event  String   @map("id_event")
-  favorites Boolean? @default(false) @map("favorites")
-  member    Boolean? @default(false) @map("member")
+  id        Int      @id @default(autoincrement())
+  id_user   Int
+  id_event  Int
+  favorites Boolean? @default(false)
+  member    Boolean? @default(false)
   event     Event    @relation(fields: [id_event], references: [id])
   user      User     @relation(fields: [id_user], references: [id])
 

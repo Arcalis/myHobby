@@ -27,11 +27,6 @@ export function EventCard({ event, tagsMap, agesMap }) {
           </span>
         </div>
 
-        {/* Описание */}
-        <p className="text-sm text-muted-foreground line-clamp-2">
-          {event.description || '—'}
-        </p>
-
         {/* Детали */}
         <div className="space-y-2 text-xs text-muted-foreground border-t border-border pt-4">
           <div className="flex items-center justify-between">

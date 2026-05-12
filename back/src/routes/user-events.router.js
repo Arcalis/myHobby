@@ -13,7 +13,6 @@ const userEventsRoutes = express.Router();
 
 userEventsRoutes.get('/users/me/favorites', authMiddleware, favorites);
 userEventsRoutes.get('/users/me/registrations', authMiddleware, registrations);
-
 userEventsRoutes.post('/events/:id/join', authMiddleware, join);
 userEventsRoutes.post('/events/:id/favorite', authMiddleware, favorite);
 userEventsRoutes.delete('/events/:id/join', authMiddleware, deleteJoin);

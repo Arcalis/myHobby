@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
-import { Search, Filter, Calendar, MapPin, Users, Clock } from 'lucide-react';
+import { Search, Filter } from 'lucide-react';
 import { Checkbox } from '../ui/checkbox';
 import { Label } from '../ui/label';
 import { apiRequest } from '../../api/client';
@@ -26,9 +25,15 @@ export default function EventsPage() {
           apiRequest('/api/events/tags'),
           apiRequest('/api/events/ages'),
         ]);
+
         setTagsMap(Object.fromEntries(tagsData.map((t) => [t.id, t.tag])));
         setAgesMap(Object.fromEntries(agesData.map((a) => [a.id, a.age_category])));
-        setEvents(Array.isArray(eventsData) ? eventsData : []);
+
+        const visibleEvents = Array.isArray(eventsData)
+          ? eventsData.filter((event) => event.active === true && event.deleted === false)
+          : [];
+
+        setEvents(visibleEvents);
       } catch (error) {
         console.error(error);
         setEvents([]);
@@ -36,27 +41,46 @@ export default function EventsPage() {
         setLoading(false);
       }
     };
+
     loadEvents();
   }, []);
 
   const formats = ['online', 'offline', 'hybrid'];
-  const categories = useMemo(() => [...new Set(events.map((e) => e.tag_id).filter(Boolean))], [events]);
-  const ages = useMemo(() => [...new Set(events.map((e) => e.age_id).filter(Boolean))], [events]);
 
-  const filteredEvents = events.filter((event) => {
-    const q = searchQuery.toLowerCase();
-    const matchesSearch =
-      searchQuery === '' ||
-      (event.name || '').toLowerCase().includes(q) ||
-      (event.description || '').toLowerCase().includes(q) ||
-      (event.author || '').toLowerCase().includes(q) ||
-      (tagsMap[event.tag_id] || '').toLowerCase().includes(q) ||
-      (agesMap[event.age_id] || '').toLowerCase().includes(q);
-    const matchesFormat = selectedFormats.length === 0 || selectedFormats.includes(event.format);
-    const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(event.tag_id);
-    const matchesAge = selectedAges.length === 0 || selectedAges.includes(event.age_id);
-    return matchesSearch && matchesFormat && matchesCategory && matchesAge;
-  });
+  const categories = useMemo(
+    () => [...new Set(events.map((e) => e.tag_id).filter(Boolean))],
+    [events]
+  );
+
+  const ages = useMemo(
+    () => [...new Set(events.map((e) => e.age_id).filter(Boolean))],
+    [events]
+  );
+
+  const filteredEvents = useMemo(() => {
+    return events.filter((event) => {
+      const q = searchQuery.toLowerCase();
+
+      const matchesSearch =
+        searchQuery === '' ||
+        (event.name || '').toLowerCase().includes(q) ||
+        (event.desription || '').toLowerCase().includes(q) ||
+        (event.author || '').toString().toLowerCase().includes(q) ||
+        (tagsMap[event.tag_id] || '').toLowerCase().includes(q) ||
+        (agesMap[event.age_id] || '').toLowerCase().includes(q);
+
+      const matchesFormat =
+        selectedFormats.length === 0 || selectedFormats.includes(event.format);
+
+      const matchesCategory =
+        selectedCategories.length === 0 || selectedCategories.includes(event.tag_id);
+
+      const matchesAge =
+        selectedAges.length === 0 || selectedAges.includes(event.age_id);
+
+      return matchesSearch && matchesFormat && matchesCategory && matchesAge;
+    });
+  }, [events, searchQuery, selectedFormats, selectedCategories, selectedAges, tagsMap, agesMap]);
 
   const toggleFilter = (value, selected, setter) => {
     if (selected.includes(value)) setter(selected.filter((v) => v !== value));
@@ -72,7 +96,6 @@ export default function EventsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Поисковая панель */}
       <section className="bg-card border-b border-border py-8">
         <div className="max-w-7xl mx-auto px-6">
           <h1 className="text-2xl font-semibold text-foreground mb-6">Каталог мероприятий</h1>
@@ -97,8 +120,6 @@ export default function EventsPage() {
 
       <div className="max-w-7xl mx-auto px-6 py-8">
         <div className="flex gap-8">
-
-          {/* Фильтры */}
           <aside className="w-[280px] flex-shrink-0 hidden lg:block">
             <div className="bg-card border border-border rounded-lg p-6 space-y-6">
               <div className="flex items-center gap-2">
@@ -162,7 +183,6 @@ export default function EventsPage() {
             </div>
           </aside>
 
-          {/* Карточки */}
           <div className="flex-1 space-y-4">
             <p className="text-sm text-muted-foreground">
               Найдено мероприятий: <span className="font-medium text-foreground">{filteredEvents.length}</span>
@@ -184,7 +204,6 @@ export default function EventsPage() {
               </div>
             )}
           </div>
-
         </div>
       </div>
     </div>

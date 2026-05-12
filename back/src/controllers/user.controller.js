@@ -62,34 +62,20 @@ export const editMe = async (req, res) => {
 };
 
 export const editRole = async (req, res) => {
-  const { id } = req.params;
+  const id = parseInt(req.params.id);
   const { role } = req.body;
-
-  const user = await prisma.user.update({
-    where: { id },
-    data: { role },
-  });
-
+  const user = await prisma.user.update({ where: { id }, data: { role } });
   res.json(user);
 };
 
 export const blockUser = async (req, res) => {
-  const { id } = req.params;
-
-  const user = await prisma.user.update({
-    where: { id },
-    data: { blocked: true },
-  });
-
+  const id = parseInt(req.params.id);
+  const user = await prisma.user.update({ where: { id }, data: { blocked: true } });
   res.json(user);
 };
 
 export const deleteUser = async (req, res) => {
-  const { id } = req.params;
-
-  await prisma.user.delete({
-    where: { id },
-  });
-
+  const id = parseInt(req.params.id);
+  await prisma.user.delete({ where: { id } });
   res.json({ message: 'Deleted' });
 };

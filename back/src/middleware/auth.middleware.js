@@ -25,7 +25,10 @@ export const authMiddleware = async (req, res, next) => {
       return res.status(403).json({ message: 'User blocked' });
     }
 
-    req.user = user;
+    req.user = {
+      id: user.id,
+      role: user.role, // ← важно
+    };
 
     next();
   } catch (e) {

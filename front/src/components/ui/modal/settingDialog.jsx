@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
-import { Input } from '../ui/input';
-import { Button } from '../ui/button';
-import { Label } from '../ui/label';
-import { apiRequest } from '../../api/client';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../dialog';
+import { Input } from '../input';
+import { Button } from '../button';
+import { Label } from '../label';
+import { apiRequest } from '../../../api/client';
 
 export function SettingsDialog({ open, onOpenChange, user, onUpdated }) {
   const [form, setForm] = useState({

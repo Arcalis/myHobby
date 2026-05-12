@@ -3,9 +3,10 @@ import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
-import { Calendar, Heart, User, Settings, FileText, MapPin, Clock } from 'lucide-react';
+import { Calendar, Heart, User, Settings, FileText, MapPin, Clock, Plus, Pencil } from 'lucide-react';
 import { apiRequest } from '../../api/client';
-import { SettingsDialog } from '../ui/settingDialog';
+import { SettingsDialog } from '../ui/modal/settingDialog';
+import { EventFormDialog } from '../ui/modal/eventFormDialog';
 
 
 function EventCard({ event, actions, favorite = false }) {
@@ -88,34 +89,56 @@ export function ProfilePage() {
   const [myEvents, setMyEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
+  const [showCreateEvent, setShowCreateEvent] = useState(false);
+  const [editingEvent, setEditingEvent] = useState(null);
+
+
+
+
+  const loadProfileData = async () => {
+    try {
+      const [registeredData, favoriteData, myEventsData] = await Promise.all([
+        apiRequest('/api/users/me/registrations'),
+        apiRequest('/api/users/me/favorites'),
+        apiRequest('/api/events/my').catch(() => []),
+      ]);
+
+      const visibleRegistered = Array.isArray(registeredData)
+        ? registeredData.filter(
+          (event) => event.active === true && event.deleted === false
+        )
+        : [];
+
+      const visibleFavorites = Array.isArray(favoriteData)
+        ? favoriteData.filter(
+          (event) => event.active === true && event.deleted === false
+        )
+        : [];
+
+      setRegisteredEvents(visibleRegistered);
+      setFavoriteEvents(visibleFavorites);
+
+      // БЕЗ фильтрации
+      setMyEvents(Array.isArray(myEventsData) ? myEventsData : []);
+
+    } catch (error) {
+      console.error(error);
+      setRegisteredEvents([]);
+      setFavoriteEvents([]);
+      setMyEvents([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const loadProfileData = async () => {
-      try {
-        const [registeredData, favoriteData] = await Promise.all([
-          apiRequest(`/api/users/me/registrations`),
-          apiRequest(`/api/users/me/favorites`),
-        ]);
-
-        setRegisteredEvents(Array.isArray(registeredData) ? registeredData : []);
-        setFavoriteEvents(Array.isArray(favoriteData) ? favoriteData : []);
-        setMyEvents([]);
-      } catch (error) {
-        console.error(error);
-        setRegisteredEvents([]);
-        setFavoriteEvents([]);
-        setMyEvents([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadProfileData();
   }, []);
 
-const handleUserUpdated = (updated) => {
-  updateUser(updated); 
-};
+
+  const handleUserUpdated = (updated) => {
+    updateUser(updated);
+  };
 
   if (!isAuthenticated || !user) {
     return <Navigate to="/" replace />;
@@ -146,7 +169,7 @@ const handleUserUpdated = (updated) => {
               <Settings className="w-4 h-4" />
               Настройки
             </Button>
-            
+
           </div>
 
         </div>
@@ -168,12 +191,10 @@ const handleUserUpdated = (updated) => {
               <Heart className="w-4 h-4" />
               Избранное
             </TabsTrigger>
-            {(user.role === 'organizer' || user.role === 'admin') && (
-              <TabsTrigger value="my-events" className="gap-2">
-                <FileText className="w-4 h-4" />
-                Мои мероприятия
-              </TabsTrigger>
-            )}
+            <TabsTrigger value="my-events" className="gap-2">
+              <FileText className="w-4 h-4" />
+              Мои мероприятия
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="registered" className="space-y-4">
@@ -195,7 +216,7 @@ const handleUserUpdated = (updated) => {
                 </Link>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="grid md:grid-cols-2 gap-4">
                 {registeredEvents.map((event) => (
                   <EventCard
                     key={event.id}
@@ -251,40 +272,63 @@ const handleUserUpdated = (updated) => {
             )}
           </TabsContent>
 
-          {(user.role === 'organizer' || user.role === 'admin') && (
-            <TabsContent value="my-events" className="space-y-4">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-medium text-foreground">Мои мероприятия ({myEvents.length})</h2>
-                <Button>Создать мероприятие</Button>
+
+          <TabsContent value="my-events" className="space-y-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-medium text-foreground">Мои мероприятия ({myEvents.length})</h2>
+              <Button className="gap-2" onClick={() => setShowCreateEvent(true)}>
+                <Plus className="w-4 h-4" />
+                Создать
+              </Button>
+            </div>
+
+            {loading ? (
+              <div className="bg-card border border-border rounded-lg p-12 text-center">
+                <p className="text-muted-foreground">Загрузка...</p>
               </div>
-
-              {loading ? (
-                <div className="bg-card border border-border rounded-lg p-12 text-center">
-                  <p className="text-muted-foreground">Загрузка...</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {myEvents.map((event) => (
+            ) : myEvents.length === 0 ? (
+              <div className="bg-card border border-border rounded-lg p-12 text-center">
+                <p className="text-muted-foreground">У вас пока нет мероприятий</p>
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-2 gap-4">
+                {myEvents.map((event) => (
+                  <div key={event.id} className="relative">
                     <EventCard
-                      key={event.id}
                       event={event}
-                      actions={
-                        <>
-                          <Button variant="outline" size="sm">
-                            Редактировать
-                          </Button>
-                          <Button variant="outline" size="sm">
-                            Участники
-                          </Button>
-                        </>
-                      }
+                      favorite={false}
+                      actions={null}
                     />
-                  ))}
-                </div>
-              )}
-            </TabsContent>
-          )}
-
+                    {/* Метка "Моё" и кнопка редактирования поверх карточки */}
+                    <div className="absolute top-4 right-4 flex items-center gap-2">
+                      <span className="px-2 py-1 bg-blue-500/10 text-blue-600 rounded text-xs font-medium">
+                        {event.approved ? 'Одобрено' : 'На модерации'}
+                      </span>
+                      <button
+                        onClick={(e) => { e.preventDefault(); setEditingEvent(event); }}
+                        className="w-7 h-7 flex items-center justify-center rounded-md bg-card border border-border hover:bg-muted transition-colors"
+                      >
+                        <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+          <EventFormDialog
+            open={showCreateEvent}
+            onOpenChange={setShowCreateEvent}
+            authorName={user.name}
+            onSaved={loadProfileData}
+          />
+          <EventFormDialog
+            open={Boolean(editingEvent)}
+            onOpenChange={(v) => { if (!v) setEditingEvent(null); }}
+            event={editingEvent}
+            authorName={user.name}
+            onSaved={() => { setEditingEvent(null); loadProfileData(); }}
+          />
         </Tabs>
 
       </div>
